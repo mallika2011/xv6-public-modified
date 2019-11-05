@@ -1,0 +1,3 @@
+Added the struct proc_stat to proc.h file
+Dont forget to modify defs.h
+Dont forget user.h
