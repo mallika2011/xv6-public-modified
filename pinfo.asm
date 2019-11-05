@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
   24:	5a                   	pop    %edx
   25:	59                   	pop    %ecx
   26:	50                   	push   %eax
-  27:	8d 45 d4             	lea    -0x2c(%ebp),%eax
+  27:	8d 45 d0             	lea    -0x30(%ebp),%eax
   2a:	50                   	push   %eax
   2b:	e8 5a 03 00 00       	call   38a <getpinfo>
   30:	83 c4 10             	add    $0x10,%esp
@@ -60,10 +60,10 @@ int main(int argc, char *argv[])
         printf(1, "pid = %d\nnum_run = %d\ncurrent queue = %d\nruntime = %d\n", p.pid, p.num_run, p.current_queue, p.runtime);
   45:	5a                   	pop    %edx
   46:	59                   	pop    %ecx
-  47:	ff 75 d8             	pushl  -0x28(%ebp)
-  4a:	ff 75 e0             	pushl  -0x20(%ebp)
-  4d:	ff 75 dc             	pushl  -0x24(%ebp)
-  50:	ff 75 d4             	pushl  -0x2c(%ebp)
+  47:	ff 75 d4             	pushl  -0x2c(%ebp)
+  4a:	ff 75 dc             	pushl  -0x24(%ebp)
+  4d:	ff 75 d8             	pushl  -0x28(%ebp)
+  50:	ff 75 d0             	pushl  -0x30(%ebp)
   53:	68 ec 07 00 00       	push   $0x7ec
   58:	6a 01                	push   $0x1
   5a:	e8 f1 03 00 00       	call   450 <printf>

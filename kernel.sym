@@ -18,7 +18,7 @@
 8010a558 panicked
 80100410 consputc
 80100580 printint
-80107490 digits.1553
+80107490 digits.1554
 00000000 exec.c
 00000000 file.c
 00000000 fs.c
@@ -55,9 +55,9 @@
 00000000 pipe.c
 00000000 proc.c
 80103600 allocproc
-8010a000 first.1614
+8010a000 first.1615
 8010a5b8 initproc
-80107b48 states.1640
+80107b48 states.1641
 00000000 sleeplock.c
 00000000 spinlock.c
 00000000 string.c

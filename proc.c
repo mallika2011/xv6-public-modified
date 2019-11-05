@@ -7,6 +7,18 @@
 #include "proc.h"
 #include "spinlock.h"
 
+struct proc *q0[64];
+struct proc *q1[64];
+struct proc *q2[64];
+struct proc *q3[64];
+struct proc *q4[64];
+
+int c0 = -1;
+int c1 = -1;
+int c2 = -1;
+int c3 = -1;
+int clocksperqueue[4] = {1, 2, 4, 8};
+struct pstat pstat_var;
 struct
 {
   struct spinlock lock;

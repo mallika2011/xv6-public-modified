@@ -6963,10 +6963,8 @@ found:
 801036de:	83 e0 c5             	and    $0xffffffc5,%eax
 801036e1:	83 c0 3c             	add    $0x3c,%eax
 801036e4:	89 83 90 00 00 00    	mov    %eax,0x90(%ebx)
+  else
     p->priority = 60;
-
-
-
   return p;
 }
 801036ea:	89 d8                	mov    %ebx,%eax
@@ -11631,7 +11629,7 @@ int sys_getpinfo(void)
 
   if (argptr(0, (char **)&proc, sizeof(struct proc_stat)) < 0)
 80105ac6:	8d 45 f4             	lea    -0xc(%ebp),%eax
-80105ac9:	6a 24                	push   $0x24
+80105ac9:	6a 28                	push   $0x28
 80105acb:	50                   	push   %eax
 80105acc:	6a 00                	push   $0x0
 80105ace:	e8 0d f1 ff ff       	call   80104be0 <argptr>
@@ -11836,6 +11834,11 @@ void tvinit(void)
 void idtinit(void)
 {
 80105c10:	55                   	push   %ebp
+static inline void
+lidt(struct gatedesc *p, int size)
+{
+  volatile ushort pd[3];
+
   pd[0] = size-1;
 80105c11:	b8 ff 07 00 00       	mov    $0x7ff,%eax
 80105c16:	89 e5                	mov    %esp,%ebp
@@ -11847,6 +11850,7 @@ void idtinit(void)
   pd[2] = (uint)p >> 16;
 80105c28:	c1 e8 10             	shr    $0x10,%eax
 80105c2b:	66 89 45 fe          	mov    %ax,-0x2(%ebp)
+
   asm volatile("lidt (%0)" : : "r" (pd));
 80105c2f:	8d 45 fa             	lea    -0x6(%ebp),%eax
 80105c32:	0f 01 18             	lidtl  (%eax)
