@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     {
             long long int x = 0;
 
-        for (volatile long long int i = 0; i < 1000000000; i++)
+        for (volatile long long int i = 0; i < 1000000*atoi(argv[1]); i++)
             {
                 x++;
             }
