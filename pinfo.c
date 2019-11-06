@@ -26,8 +26,8 @@ int main(int argc, char *argv[])
             printf(1, "Error: No such process\n");
             exit();
         }
-        printf(1, "Process Details :\n");
-        printf(1, "pid = %d\nnum_run = %d\ncurrent queue = %d\nruntime = %d\n", p.pid, p.num_run, p.current_queue, p.runtime);
+        printf(1, "\033[01;33mProcess Details :\n\033[0m;");
+        printf(1, "\033[01;33mpid = %d\nnum_run = %d\ncurrent queue = %d\nruntime = %d\n\033[0m;", p.pid, p.num_run, p.current_queue, p.runtime);
         exit();
     }
 }

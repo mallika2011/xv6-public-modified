@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     //     if (p == 0)
     //     {
     //         long long int x = 0;
-    //         for (volatile long long int i = 0; i < 1000000000; i++)
+    //         for (volatile long long int i = 0; i < 10000000; i++)
     //         {
     //             x++;
     //         }
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
             {
                 x++;
             }
-        printf(1,"%d\n", atoi(argv[1]));
+        printf(1,"********************%d*****************************\n", atoi(argv[1]));
     }
     exit();
 }

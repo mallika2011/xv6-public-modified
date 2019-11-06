@@ -56,12 +56,15 @@ void trap(struct trapframe *tf)
       release(&tickslock);
       if (proc)
       {
-        if (proc->state == RUNNING)
+        if (myproc()->state == RUNNING)
         {
-          proc->rtime++;
-          // cprintf("current queue = %d\n", proc->current_queue);
-          // cprintf("updating ticks to %d\n", proc->ticks[proc->current_queue]+1);
-          proc->ticks[proc->current_queue]++;
+          myproc()->rtime++;
+
+          #ifdef MLFQ
+          cprintf("pid--%d   process -- %s  queue--%d  updating ticks to %d\n",proc->pid,proc->name,proc->current_queue,proc->ticks[proc->current_queue]+1);
+          #endif
+
+          myproc()->ticks[proc->current_queue]+=1;
         }
         else if (proc->state == SLEEPING)
           proc->iotime++;
@@ -118,17 +121,22 @@ void trap(struct trapframe *tf)
   // If interrupts were on while locks held, would need to check nlock.
   if (myproc() && myproc()->state == RUNNING && tf->trapno == T_IRQ0 + IRQ_TIMER)
   {
-    #ifdef DEFAULT
-        yield();
-    #else
-    #ifdef PRIORITY
-        yield();
-    #else
-    #ifdef MLFQ
-        yield();
-    #endif
-    #endif
-    #endif
+    // #ifdef DEFAULT
+    //     yield();
+    // #else
+    // #ifdef FCFS
+    //     volatile int xx;
+    //     xx++;
+    // #endif
+    // #ifdef PRIORITY
+    //     yield();
+    // #else
+    // #ifdef MLFQ
+    //     yield();
+    // #endif
+    // #endif
+    // #endif
+    yield();
   }
   // Check if the process has been killed since we yielded
   if (myproc() && myproc()->killed && (tf->cs & 3) == DPL_USER)

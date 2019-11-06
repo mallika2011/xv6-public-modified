@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 		else
 		{
 			status = waitx(&a, &b);
-			printf(1, "Wait Time = %d\nRun Time = %d with Status %d \n", a, b, status);
+			printf(1, "Wait Time = %d\nRun Time = %d \nWith Status %d \n", a, b, status);
 		}
 	}
 

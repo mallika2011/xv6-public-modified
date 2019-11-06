@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
   4b:	8d 45 f0             	lea    -0x10(%ebp),%eax
   4e:	50                   	push   %eax
   4f:	e8 2e 03 00 00       	call   382 <waitx>
-			printf(1, "Wait Time = %d\nRun Time = %d with Status %d \n", a, b, status);
+			printf(1, "Wait Time = %d\nRun Time = %d \nWith Status %d \n", a, b, status);
   54:	89 04 24             	mov    %eax,(%esp)
   57:	ff 75 f4             	pushl  -0xc(%ebp)
   5a:	ff 75 f0             	pushl  -0x10(%ebp)

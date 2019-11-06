@@ -109,12 +109,11 @@ found:
   p->ticks[2] = 0;
   p->ticks[3] = 0;
   p->ticks[4] = 0;
-  p->active = 1;
+  // p->start = ticks;
+  p->waittime = 5;
 
-  // if(p->pid >3){
   c0++;
   q0[c0] = p;
-  // }
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -139,13 +138,13 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
-  // acquire(&ptable.lock);  
+  acquire(&ptable.lock);
   p->ctime = ticks; // TODO Might need to protect the read of ticks with a lock
   p->etime = 0;
   p->rtime = 0;
   p->iotime = 0;
   p->num_run = 0;
-  // release(&ptable.lock);
+  release(&ptable.lock);
 
   if (p->pid == 1 || p->pid == 2)
     p->priority = 1;
@@ -254,9 +253,7 @@ int fork(void)
   pid = np->pid;
 
   acquire(&ptable.lock);
-
   np->state = RUNNABLE;
-
   release(&ptable.lock);
 
   return pid;
@@ -307,11 +304,8 @@ void exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
-
   //*********************************** MY EDIT **********************************
-
   curproc->etime = ticks; // TODO Might need to protect the read of ticks with a lock
-  // cprintf("Assiging exit time as %d to %d\n", curproc->etime, curproc->pid);
   sched();
 
   panic("zombie exit");
@@ -387,11 +381,9 @@ int waitx(int *wtime, int *rtime)
         // Found one.
 
         // Added time field update, else same from wait system call
-        cprintf("etime %d  ctime %d    rtime %d    iotime %d \n", p->etime, p->ctime, p->rtime, p->iotime);
+        cprintf("\netime %d  ctime %d    rtime %d    iotime %d \n", p->etime, p->ctime, p->rtime, p->iotime);
         *wtime = p->etime - p->ctime - p->rtime - p->iotime;
         *rtime = p->rtime;
-
-        //cprintf("%d \n %d",*wtime,*rtime );
 
         // same as wait
         pid = p->pid;
@@ -429,42 +421,6 @@ int waitx(int *wtime, int *rtime)
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
 
-// void
-// scheduler(void)
-// {
-//   struct proc *p;
-//   struct cpu *c = mycpu();
-//   c->proc = 0;
-
-//   for(;;){
-//     // Enable interrupts on this processor.
-//     sti();
-
-//     // Loop over process table looking for process to run.
-//     acquire(&ptable.lock);
-//     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-//       if(p->state != RUNNABLE)
-//         continue;
-
-//       // Switch to chosen process.  It is the process's job
-//       // to release ptable.lock and then reacquire it
-//       // before jumping back to us.
-//       c->proc = p;
-//       switchuvm(p);
-//       p->state = RUNNING;
-
-//       swtch(&(c->scheduler), p->context);
-//       switchkvm();
-
-//       // Process is done running for now.
-//       // It should have changed its p->state before coming back.
-//       c->proc = 0;
-//     }
-//     release(&ptable.lock);
-
-//   }
-// }
-
 void scheduler(void)
 {
   struct proc *p, *p2;
@@ -485,13 +441,10 @@ void scheduler(void)
     {
       for (i = 0; i <= c0; i++)
       {
-        // if(q0[i]->pid>3)
-        // cprintf("%s\n",q0[i]->name);
         if (q0[i]->state != RUNNABLE)
           continue;
-        // cprintf("came here\n");
+        q0[i]->start=ticks;
         m_proc = q0[i];
-        cprintf("%s  %d  %d\n", m_proc->name, m_proc->pid, m_proc->rtime);
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -500,19 +453,20 @@ void scheduler(void)
         switchkvm();
         c->proc = 0;
 
-        //TODO : update ticks in trap
-        if (m_proc->rtime== clockperiod[0] && m_proc->pid > 3)
+        //check if time slice expired or waittime exceeded
+        if ((m_proc->ticks[0] >= clockperiod[0]) && m_proc->pid > 3)
         {
-          cprintf("switching to queue 1\n");
-          /*copy proc to lower priority queue*/
-          c1++;
-          m_proc->current_queue++;
-          q1[c1] = m_proc;
-          /*delete proc from q0*/
-          // q0[i] = NULL;
+          //copy proc to lower priority queue
+          if (m_proc->killed == 0)
+          {
+            cprintf("\033[1;31m %d switching to queue 1      since ticks of [0]= %d\n\033[0m;", m_proc->pid, m_proc->ticks[0]);
+            c1++;
+            m_proc->current_queue++;
+            q1[c1] = m_proc;
+          }
+          //delete proc from q0
           for (j = i; j <= c0 - 1; j++)
             q0[j] = q0[j + 1];
-          // q0[c0] = NULL;
           m_proc->ticks[0] = 0;
           c0--;
         }
@@ -525,6 +479,7 @@ void scheduler(void)
       {
         if (q1[i]->state != RUNNABLE)
           continue;
+        q1[i]->start=ticks;
         m_proc = q1[i];
         c->proc = m_proc;
         switchuvm(m_proc);
@@ -534,13 +489,23 @@ void scheduler(void)
         switchkvm();
         c->proc = 0;
         //TODO : update ticks in trap
-        if (m_proc->ticks[1] >= clockperiod[1])
+        if (m_proc->ticks[1] >= clockperiod[1] || ticks + m_proc->ticks[1] - m_proc->start > m_proc->waittime)
         {
-          cprintf("switching to queue 2\n");
-          /*copy proc to lower priority queue*/
-          c2++;
-          m_proc->current_queue++;
-          q2[c2] = m_proc;
+          if (ticks +m_proc->ticks[1] - m_proc->start > m_proc->waittime)
+          {
+            cprintf("\033[1;32m %d switching to queue 0  since waittime %ds exceeded\n\033[0m;", m_proc->pid, m_proc->waittime);
+            c0++;
+            m_proc->current_queue--;
+            q0[c0] = m_proc;
+          }
+          //otherwise copy proc to lower priority queue
+          else if (m_proc->killed == 0)
+          {
+            cprintf("\033[1;31m%d switching to queue 2      since ticks of [1]= %d\n\033[0m;", m_proc->pid, m_proc->ticks[1]);
+            c2++;
+            m_proc->current_queue++;
+            q2[c2] = m_proc;
+          }
           /*delete proc from q1*/
           for (j = i; j <= c1 - 1; j++)
             q1[j] = q1[j + 1];
@@ -555,6 +520,7 @@ void scheduler(void)
       {
         if (q2[i]->state != RUNNABLE)
           continue;
+        q2[i]->start=ticks;
         m_proc = q2[i];
         c->proc = m_proc;
         switchuvm(m_proc);
@@ -564,12 +530,23 @@ void scheduler(void)
         switchkvm();
         c->proc = 0;
         //TODO : update ticks in trap
-        if (m_proc->ticks[2] >= clockperiod[2])
+        if (m_proc->ticks[2] >= clockperiod[2] ||ticks + m_proc->ticks[2] - m_proc->start > m_proc->waittime)
         {
-          /*copy proc to lower priority queue*/
-          c3++;
-          m_proc->current_queue++;
-          q3[c3] = m_proc;
+          if (ticks +m_proc->ticks[2] - m_proc->start > m_proc->waittime)
+          {
+            cprintf(" \033[1;32m %d switching to queue 1     since waittime %ds exceeded\n\033[0m;", m_proc->pid, m_proc->waittime);            
+            c1++;
+            m_proc->current_queue--;
+            q1[c1] = m_proc;
+          }
+          // otherwise copy proc to lower priority queue
+          else if (m_proc->killed == 0)
+          {
+            cprintf("\033[1;31m%d switching to queue 3     since ticks of [2]= %d\n\033[0m;", m_proc->pid, m_proc->ticks[2]);
+            c3++;
+            m_proc->current_queue++;
+            q3[c3] = m_proc;
+          }
           /*delete proc from q2*/
           for (j = i; j <= c2 - 1; j++)
             q2[j] = q2[j + 1];
@@ -584,6 +561,7 @@ void scheduler(void)
       {
         if (q3[i]->state != RUNNABLE)
           continue;
+        q3[i]->start=ticks;
         m_proc = q3[i];
         c->proc = m_proc;
         switchuvm(m_proc);
@@ -593,12 +571,24 @@ void scheduler(void)
         switchkvm();
         c->proc = 0;
         //TODO : update ticks in trap
-        if (m_proc->ticks[3] >= clockperiod[3])
+        if (m_proc->ticks[3] >= clockperiod[3] || ticks +m_proc->ticks[3] - m_proc->start > m_proc->waittime)
         {
-          /*copy proc to lower priority queue*/
-          c4++;
-          m_proc->current_queue++;
-          q4[c4] = m_proc;
+
+          if (ticks +m_proc->ticks[3] - m_proc->start > m_proc->waittime)
+          {
+            cprintf("\033[1;32m %d switching to queue 2     since waittime %ds exceeded\n\033[0m;", m_proc->pid, m_proc->waittime);
+            c2++;
+            m_proc->current_queue--;
+            q2[c2] = m_proc;
+          }
+          //otherwise copy proc to lower priority queue
+          else if (m_proc->killed == 0)
+          {
+            cprintf("\033[1;31m%d switching to queue 4     since ticks of [3]= %d\n\033[0m;", m_proc->pid, m_proc->ticks[3]);
+            c4++;
+            m_proc->current_queue++;
+            q4[c4] = m_proc;
+          }
           /*delete proc from q1*/
           for (j = i; j <= c3 - 1; j++)
             q3[j] = q3[j + 1];
@@ -613,6 +603,7 @@ void scheduler(void)
       {
         if (q4[i]->state != RUNNABLE)
           continue;
+        q4[i]->start=ticks;
         m_proc = q4[i];
         c->proc = m_proc;
         switchuvm(m_proc);
@@ -621,10 +612,26 @@ void scheduler(void)
         swtch(&c->scheduler, m_proc->context);
         switchkvm();
         c->proc = 0;
-        /*move process to end of its own queue */
-        for (j = i; j <= c4 - 1; j++)
-          q4[j] = q4[j + 1];
-        q4[c4] = m_proc;
+
+        if (ticks +m_proc->ticks[3] - m_proc->start > m_proc->waittime)
+        {
+          cprintf("\033[1;32m %d switching to queue 3     since waittime %ds exceeded\n\033[0m;", m_proc->pid, m_proc->waittime);
+          c3++;
+          m_proc->current_queue--;
+          q3[c3] = m_proc;
+          for (j = i; j <= c4 - 1; j++)
+            q4[j] = q4[j + 1];
+          m_proc->ticks[4] = 0;
+          c4--;
+        }
+
+        if (m_proc->killed == 0)
+        {
+          /*move process to end of its own queue */
+          for (j = i; j <= c4 - 1; j++)
+            q4[j] = q4[j + 1];
+          q4[c4] = m_proc;
+        }
       }
     }
     release(&ptable.lock);
@@ -898,8 +905,8 @@ int getpinfo(struct proc_stat *p_proc, int pid)
       p_proc->pid = p.pid;
       p_proc->runtime = p.rtime;
       p_proc->num_run = p.num_run;
-      p_proc->current_queue = p.current_queue; //TODO: MLFQ
-      for (int i = 0; i < 5; i++) //TODO : Have to change
+      p_proc->current_queue = p.current_queue; 
+      for (int i = 0; i < 5; i++)              
         p_proc->ticks[i] = p.ticks[i];
       release(&ptable.lock);
       return pid;
@@ -908,58 +915,6 @@ int getpinfo(struct proc_stat *p_proc, int pid)
   release(&ptable.lock);
   return -1;
 }
-
-//****************************************** MY EDIT ********************************************
-
-#ifdef SML
-/*
-  this method will find the next process to run
-*/
-struct proc *findReadyProcess(int *index1, int *index2, int *index3, uint *priority)
-{
-  int i;
-  struct proc *proc2;
-notfound:
-  for (i = 0; i < NPROC; i++)
-  {
-    switch (*priority)
-    {
-    case 1:
-      proc2 = &ptable.proc[(*index1 + i) % NPROC];
-      if (proc2->state == RUNNABLE && proc2->priority == *priority)
-      {
-        *index1 = (*index1 + 1 + i) % NPROC;
-        return proc2; // found a runnable process with appropriate priority
-      }
-    case 2:
-      proc2 = &ptable.proc[(*index2 + i) % NPROC];
-      if (proc2->state == RUNNABLE && proc2->priority == *priority)
-      {
-        *index2 = (*index2 + 1 + i) % NPROC;
-        return proc2; // found a runnable process with appropriate priority
-      }
-    case 3:
-      proc2 = &ptable.proc[(*index3 + i) % NPROC];
-      if (proc2->state == RUNNABLE && proc2->priority == *priority)
-      {
-        *index3 = (*index3 + 1 + i) % NPROC;
-        return proc2; // found a runnable process with appropriate priority
-      }
-    }
-  }
-  if (*priority == 3)
-  { //did not find any process on any of the prorities
-    *priority = 3;
-    return 0;
-  }
-  else
-  {
-    *priority += 1; //will try to find a process at a lower priority (ighter value of priority)
-    goto notfound;
-  }
-  return 0;
-}
-#endif
 
 //************************************** MY EDIT (PS) *************************************
 int ps()

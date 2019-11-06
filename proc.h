@@ -59,6 +59,9 @@ struct proc {
   int priority;                //process priority
   int ticks[5];
   int active;
+  int prev;
+  int start;
+  int waittime;
   int current_queue;
 };
 
