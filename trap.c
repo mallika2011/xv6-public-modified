@@ -53,6 +53,7 @@ void trap(struct trapframe *tf)
       acquire(&tickslock);
       ticks++;
       wakeup(&ticks);
+      // int o = ps(); //for mlfq graphs
       release(&tickslock);
       if (proc)
       {

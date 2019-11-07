@@ -1106,6 +1106,16 @@ int ps()
       cprintf("%s \t %d \t RUNNABLE \t %d \t %d \t \n", p->name, p->pid, p->priority, p->ctime);
   }
   release(&ptable.lock);
+
+  //FOR THE GRAPH PLOTTING 
+  // for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  // {
+  //   if(p->state!=UNUSED && p->pid>3)
+  //   {
+  //     cprintf("%d %d %d\n",p->pid, p->current_queue, ticks);
+  //   }
+  // }
+
   return 24;
 }
 
