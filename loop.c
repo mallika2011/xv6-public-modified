@@ -7,16 +7,13 @@
 int main(int argc, char *argv[])
 {
 
-    for (volatile long long int j = 0; j < 3; j++)
+    for (volatile long long int j = 0; j < 2; j++)
     {
         int p = fork();
         if (p == 0)
         {
-            long long int x = 0;
-            for (volatile long long int i = 0; i < 10000000; i++)
-            {
-                x++;
-            }
+            for (volatile long long int i = 0; i < 10000; i++);
+            printf(1,"DONE \n");
         }
     }
     // int p=fork();

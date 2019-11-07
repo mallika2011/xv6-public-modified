@@ -220,33 +220,33 @@ void rem_process(int pid, int curq)
 
 void display_queues(void)
 {
-  cprintf("\n\n\n******************************************");
+  cprintf("\n\n******************************************\n");
   if(c0!=-1){
-  cprintf("\nQUEUE----0\n");
+  cprintf("QUEUE----0\n");
   for(int i=0; i<=c0; i++)
     cprintf("(%d,%s,%d)\t",q0[i]->pid, q0[i]->name, q0[i]->state);
   cprintf("\n");
   }
   if(c1!=-1){
-  cprintf("\nQUEUE----1\n");
+  cprintf("QUEUE----1\n");
   for(int i=0; i<=c1; i++)
     cprintf("(%d,%s,%d)\t",q1[i]->pid, q1[i]->name, q1[i]->state);
   cprintf("\n");
   }
   if(c2!=-1){
-  cprintf("\nQUEUE----2\n");
+  cprintf("QUEUE----2\n");
   for(int i=0; i<=c2; i++)
     cprintf("(%d,%s,%d)\t",q2[i]->pid, q2[i]->name, q2[i]->state);
   cprintf("\n");
   }
   if(c3!=-1){
-  cprintf("\nQUEUE----3\n");
+  cprintf("QUEUE----3\n");
   for(int i=0; i<=c3; i++)
     cprintf("(%d,%s,%d)\t",q3[i]->pid, q3[i]->name, q3[i]->state);
   cprintf("\n");
   }
   if(c4!=-1){
-  cprintf("\nQUEUE----4\n");
+  cprintf("QUEUE----4\n");
   for(int i=0; i<=c4; i++)
     cprintf("(%d,%s,%d)\t",q4[i]->pid, q4[i]->name, q4[i]->state);
   cprintf("\n");
@@ -288,6 +288,7 @@ void userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  p->start=ticks;
 
   release(&ptable.lock);
 }
@@ -356,6 +357,7 @@ int fork(void)
 
   acquire(&ptable.lock);
   np->state = RUNNABLE;
+  np->start=ticks;
   release(&ptable.lock);
 
   return pid;
@@ -540,7 +542,7 @@ void ageing(void)
   //checking q2
   for(int i=0; i<=c2; i++)
   {
-    if(q1[i]->state!=RUNNABLE)
+    if(q2[i]->state!=RUNNABLE)
       continue;
     //if waittime exceeded
     if(ticks-q2[i]->start > q2[i]->waittime)
@@ -557,7 +559,7 @@ void ageing(void)
   //checking q3
   for(int i=0; i<=c3; i++)
   {
-    if(q1[i]->state!=RUNNABLE)
+    if(q3[i]->state!=RUNNABLE)
       continue;
     //if waittime exceeded
     if(ticks-q3[i]->start > q3[i]->waittime)
@@ -574,7 +576,7 @@ void ageing(void)
   //checking q4
   for(int i=0; i<=c4; i++)
   {
-    if(q1[i]->state!=RUNNABLE)
+    if(q4[i]->state!=RUNNABLE)
       continue;
     //if waittime exceeded
     if(ticks-q4[i]->start > q4[i]->waittime)
@@ -901,6 +903,7 @@ void yield(void)
 {
   acquire(&ptable.lock); //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  myproc()->start=ticks;
   sched();
   release(&ptable.lock);
 }
@@ -976,7 +979,10 @@ wakeup1(void *chan)
 
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if (p->state == SLEEPING && p->chan == chan)
+    {
       p->state = RUNNABLE;
+      p->start=ticks;
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -1002,7 +1008,10 @@ int kill(int pid)
       p->killed = 1;
       // Wake process from sleep if necessary.
       if (p->state == SLEEPING)
+      {
+        p->start=ticks;
         p->state = RUNNABLE;
+      }
       release(&ptable.lock);
       return 0;
     }
@@ -1109,6 +1118,8 @@ int set_priority(int pid, int priority)
 
   //looping over all processes
   int flag = 0;
+  if(priority<0 || priority >100)
+    return -2;
   acquire(&ptable.lock);
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {

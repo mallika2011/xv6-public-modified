@@ -21,13 +21,18 @@ int main(int argc, char *argv[])
     else
     {
         pid = atoi(argv[1]);
-        if (getpinfo(&p, pid) < 0)
+        if (getpinfo(&p, pid) ==-1)
         {
             printf(1, "Error: No such process\n");
             exit();
         }
-        printf(1, "\033[01;33mProcess Details :\n\033[0m;");
-        printf(1, "\033[01;33mpid = %d\nnum_run = %d\ncurrent queue = %d\nruntime = %d\n\033[0m;", p.pid, p.num_run, p.current_queue, p.runtime);
+        else if(getpinfo(&p, pid) ==-2)
+        {
+            printf(1,"Invalid priority\n");
+            exit();
+        }
+        printf(1, "\033[01;33mProcess Details :\n\033[0m");
+        printf(1, "\033[01;33mpid = %d\nnum_run = %d\ncurrent queue = %d\nruntime = %d\n\033[0m", p.pid, p.num_run, p.current_queue, p.runtime);
         exit();
     }
 }
