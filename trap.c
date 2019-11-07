@@ -61,10 +61,10 @@ void trap(struct trapframe *tf)
           myproc()->rtime++;
 
           #ifdef MLFQ
-          cprintf("pid--%d   process -- %s  queue--%d  updating ticks to %d\n",proc->pid,proc->name,proc->current_queue,proc->ticks[proc->current_queue]+1);
+          // cprintf("pid--%d   process -- %s  queue--%d  updating ticks to %d\n",proc->pid,proc->name,proc->current_queue,proc->ticks[proc->current_queue]+1);
           #endif
 
-          myproc()->ticks[proc->current_queue]+=1;
+          myproc()->ticks[proc->current_queue]++;
         }
         else if (proc->state == SLEEPING)
           proc->iotime++;
@@ -98,6 +98,10 @@ void trap(struct trapframe *tf)
   default:
     if (myproc() == 0 || (tf->cs & 3) == 0)
     {
+      if(myproc()==0)
+        cprintf("myproc\n");
+      else 
+        cprintf("lala\n");
       // In kernel, it must be our mistake.
       cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",
               tf->trapno, cpuid(), tf->eip, rcr2());
@@ -121,22 +125,17 @@ void trap(struct trapframe *tf)
   // If interrupts were on while locks held, would need to check nlock.
   if (myproc() && myproc()->state == RUNNING && tf->trapno == T_IRQ0 + IRQ_TIMER)
   {
-    // #ifdef DEFAULT
-    //     yield();
-    // #else
-    // #ifdef FCFS
-    //     volatile int xx;
-    //     xx++;
-    // #endif
-    // #ifdef PRIORITY
-    //     yield();
-    // #else
-    // #ifdef MLFQ
-    //     yield();
-    // #endif
-    // #endif
-    // #endif
-    yield();
+    #ifdef DEFAULT
+        yield();
+    #else
+    #ifdef PRIORITY
+        yield();
+    #else
+    #ifdef MLFQ
+        yield();
+    #endif
+    #endif
+    #endif
   }
   // Check if the process has been killed since we yielded
   if (myproc() && myproc()->killed && (tf->cs & 3) == DPL_USER)

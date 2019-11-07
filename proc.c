@@ -153,6 +153,108 @@ found:
   return p;
 }
 
+void rem_process(int pid, int curq)
+{
+  if(curq==0)
+  {
+    for(int i=0; i<=c0; i++)
+    {
+      if(q0[i]->pid==pid)
+      {
+        for (int j = i; j <= c0 - 1; j++)
+            q0[j] = q0[j + 1];
+        c0--;
+      }
+    }
+  }
+  else if(curq==1)
+  {
+    for(int i=0; i<=c1; i++)
+    {
+      if(q1[i]->pid==pid)
+      {
+        for (int j = i; j <= c1 - 1; j++)
+            q1[j] = q1[j + 1];
+        c1--;
+      }
+    }
+  }
+  else if(curq==2)
+  {
+    for(int i=0; i<=c2; i++)
+    {
+      if(q2[i]->pid==pid)
+      {
+        for (int j = i; j <= c2 - 1; j++)
+            q2[j] = q2[j + 1];
+        c2--;
+      }
+    }
+  }
+  else if(curq==3)
+  {
+    for(int i=0; i<=c3; i++)
+    {
+      if(q3[i]->pid==pid)
+      {
+        for (int j = i; j <= c3 - 1; j++)
+            q3[j] = q3[j + 1];
+        c3--;
+      }
+    }
+  }
+  else if(curq==4)
+  {
+    for(int i=0; i<=c4; i++)
+    {
+      if(q4[i]->pid==pid)
+      {
+        // cprintf(" %d pid=%d\n", i, pid);
+        for (int j = i; j <= c4 - 1; j++)
+            q4[j] = q4[j + 1];
+        c4--;
+      }
+    }
+  }
+}
+
+void display_queues(void)
+{
+  cprintf("\n\n\n******************************************");
+  if(c0!=-1){
+  cprintf("\nQUEUE----0\n");
+  for(int i=0; i<=c0; i++)
+    cprintf("(%d,%s,%d)\t",q0[i]->pid, q0[i]->name, q0[i]->state);
+  cprintf("\n");
+  }
+  if(c1!=-1){
+  cprintf("\nQUEUE----1\n");
+  for(int i=0; i<=c1; i++)
+    cprintf("(%d,%s,%d)\t",q1[i]->pid, q1[i]->name, q1[i]->state);
+  cprintf("\n");
+  }
+  if(c2!=-1){
+  cprintf("\nQUEUE----2\n");
+  for(int i=0; i<=c2; i++)
+    cprintf("(%d,%s,%d)\t",q2[i]->pid, q2[i]->name, q2[i]->state);
+  cprintf("\n");
+  }
+  if(c3!=-1){
+  cprintf("\nQUEUE----3\n");
+  for(int i=0; i<=c3; i++)
+    cprintf("(%d,%s,%d)\t",q3[i]->pid, q3[i]->name, q3[i]->state);
+  cprintf("\n");
+  }
+  if(c4!=-1){
+  cprintf("\nQUEUE----4\n");
+  for(int i=0; i<=c4; i++)
+    cprintf("(%d,%s,%d)\t",q4[i]->pid, q4[i]->name, q4[i]->state);
+  cprintf("\n");
+  }
+  cprintf("******************************************\n\n");
+
+}
+
 //PAGEBREAK: 32
 // Set up first user process.
 void userinit(void)
@@ -336,6 +438,9 @@ int wait(void)
         kfree(p->kstack);
         p->kstack = 0;
         freevm(p->pgdir);
+        #ifdef MLFQ
+        rem_process(p->pid,p->current_queue); //Removing zombie processses from the queue
+        #endif 
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
@@ -390,6 +495,7 @@ int waitx(int *wtime, int *rtime)
         kfree(p->kstack);
         p->kstack = 0;
         freevm(p->pgdir);
+        // rem_process(p->pid,p->current_queue);
         p->state = UNUSED;
         p->pid = 0;
         p->parent = 0;
@@ -411,6 +517,80 @@ int waitx(int *wtime, int *rtime)
     sleep(curproc, &ptable.lock); //DOC: wait-sleep
   }
 }
+
+void ageing(void)
+{
+  //checking q1
+  for(int i=0; i<=c1; i++)
+  {
+    if(q1[i]->state!=RUNNABLE)
+      continue;
+    //if waittime exceeded
+    if(ticks-q1[i]->start > q1[i]->waittime)
+    {
+      cprintf("\033[1;32m %d switching to queue 0  since waittime %ds exceeded\n\033[0m", q1[i]->pid, q1[i]->waittime);
+      c0++;
+      q1[i]->current_queue--;
+      q1[i]->ticks[q1[i]->current_queue]=0;
+      q1[i]->start=ticks;
+      q0[c0] = q1[i];
+      rem_process(q1[i]->pid, q1[i]->current_queue);
+    }
+  }
+  //checking q2
+  for(int i=0; i<=c2; i++)
+  {
+    if(q1[i]->state!=RUNNABLE)
+      continue;
+    //if waittime exceeded
+    if(ticks-q2[i]->start > q2[i]->waittime)
+    {
+      cprintf("\033[1;32m %d switching to queue 1  since waittime %ds exceeded\n\033[0m", q2[i]->pid, q2[i]->waittime);
+      c1++;
+      q2[i]->current_queue--;
+      q2[i]->ticks[q2[i]->current_queue]=0;
+      q2[i]->start=ticks;
+      q1[c1] = q2[i];
+      rem_process(q2[i]->pid, q2[i]->current_queue);
+    }
+  }
+  //checking q3
+  for(int i=0; i<=c3; i++)
+  {
+    if(q1[i]->state!=RUNNABLE)
+      continue;
+    //if waittime exceeded
+    if(ticks-q3[i]->start > q3[i]->waittime)
+    {
+      cprintf("\033[1;32m %d switching to queue 2  since waittime %ds exceeded\n\033[0m", q3[i]->pid, q3[i]->waittime);
+      c2++;
+      q3[i]->current_queue--;
+      q3[i]->ticks[q3[i]->current_queue]=0;
+      q3[i]->start=ticks;
+      q2[c2] = q3[i];
+      rem_process(q3[i]->pid, q3[i]->current_queue);
+    }
+  }
+  //checking q4
+  for(int i=0; i<=c4; i++)
+  {
+    if(q1[i]->state!=RUNNABLE)
+      continue;
+    //if waittime exceeded
+    if(ticks-q4[i]->start > q4[i]->waittime)
+    {
+      cprintf("\033[1;32m %d switching to queue 3  since waittime %ds exceeded\n\033[0m", q4[i]->pid, q4[i]->waittime);
+      c3++;
+      q4[i]->current_queue--;
+      q4[i]->ticks[q4[i]->current_queue]=0;
+      q4[i]->start=ticks;
+      q3[c3] = q4[i];
+      rem_process(q4[i]->pid, q4[i]->current_queue);
+    }
+  }
+}
+
+
 
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
@@ -435,6 +615,7 @@ void scheduler(void)
 
 #ifdef MLFQ
     acquire(&ptable.lock);
+    ageing();
     struct proc *m_proc;
     int i, j;
     if (c0 != -1) // ENTERING QUEUE 0
@@ -445,6 +626,7 @@ void scheduler(void)
           continue;
         q0[i]->start=ticks;
         m_proc = q0[i];
+        display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -459,7 +641,7 @@ void scheduler(void)
           //copy proc to lower priority queue
           if (m_proc->killed == 0)
           {
-            cprintf("\033[1;31m %d switching to queue 1      since ticks of [0]= %d\n\033[0m;", m_proc->pid, m_proc->ticks[0]);
+            cprintf("\033[1;31m (%d,%s) switching to queue 1      since ticks of [0]= %d\n\033[0m", m_proc->pid,m_proc->name, m_proc->ticks[0]);
             c1++;
             m_proc->current_queue++;
             q1[c1] = m_proc;
@@ -481,6 +663,7 @@ void scheduler(void)
           continue;
         q1[i]->start=ticks;
         m_proc = q1[i];
+        display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -489,19 +672,12 @@ void scheduler(void)
         switchkvm();
         c->proc = 0;
         //TODO : update ticks in trap
-        if (m_proc->ticks[1] >= clockperiod[1] || ticks + m_proc->ticks[1] - m_proc->start > m_proc->waittime)
+        if (m_proc->ticks[1] >= clockperiod[1] || m_proc->killed!=0)
         {
-          if (ticks +m_proc->ticks[1] - m_proc->start > m_proc->waittime)
+          // copy proc to lower priority queue
+          if (m_proc->killed == 0)
           {
-            cprintf("\033[1;32m %d switching to queue 0  since waittime %ds exceeded\n\033[0m;", m_proc->pid, m_proc->waittime);
-            c0++;
-            m_proc->current_queue--;
-            q0[c0] = m_proc;
-          }
-          //otherwise copy proc to lower priority queue
-          else if (m_proc->killed == 0)
-          {
-            cprintf("\033[1;31m%d switching to queue 2      since ticks of [1]= %d\n\033[0m;", m_proc->pid, m_proc->ticks[1]);
+            cprintf("\033[1;31m(%d, %s) switching to queue 2      since ticks of [1]= %d\n\033[0m", m_proc->pid, m_proc->name, m_proc->ticks[1]);
             c2++;
             m_proc->current_queue++;
             q2[c2] = m_proc;
@@ -522,6 +698,7 @@ void scheduler(void)
           continue;
         q2[i]->start=ticks;
         m_proc = q2[i];
+        display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -530,19 +707,12 @@ void scheduler(void)
         switchkvm();
         c->proc = 0;
         //TODO : update ticks in trap
-        if (m_proc->ticks[2] >= clockperiod[2] ||ticks + m_proc->ticks[2] - m_proc->start > m_proc->waittime)
+        if (m_proc->ticks[2] >= clockperiod[2]|| m_proc->killed!=0)
         {
-          if (ticks +m_proc->ticks[2] - m_proc->start > m_proc->waittime)
+          //  copy proc to lower priority queue
+          if (m_proc->killed == 0)
           {
-            cprintf(" \033[1;32m %d switching to queue 1     since waittime %ds exceeded\n\033[0m;", m_proc->pid, m_proc->waittime);            
-            c1++;
-            m_proc->current_queue--;
-            q1[c1] = m_proc;
-          }
-          // otherwise copy proc to lower priority queue
-          else if (m_proc->killed == 0)
-          {
-            cprintf("\033[1;31m%d switching to queue 3     since ticks of [2]= %d\n\033[0m;", m_proc->pid, m_proc->ticks[2]);
+            cprintf("\033[1;31m(%d, %s) switching to queue 3     since ticks of [2]= %d\n\033[0m", m_proc->pid, m_proc->name, m_proc->ticks[2]);
             c3++;
             m_proc->current_queue++;
             q3[c3] = m_proc;
@@ -563,6 +733,7 @@ void scheduler(void)
           continue;
         q3[i]->start=ticks;
         m_proc = q3[i];
+        display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -571,20 +742,13 @@ void scheduler(void)
         switchkvm();
         c->proc = 0;
         //TODO : update ticks in trap
-        if (m_proc->ticks[3] >= clockperiod[3] || ticks +m_proc->ticks[3] - m_proc->start > m_proc->waittime)
+        if (m_proc->ticks[3] >= clockperiod[3] || m_proc->killed!=0)
         {
 
-          if (ticks +m_proc->ticks[3] - m_proc->start > m_proc->waittime)
+          // copy proc to lower priority queue
+          if (m_proc->killed == 0)
           {
-            cprintf("\033[1;32m %d switching to queue 2     since waittime %ds exceeded\n\033[0m;", m_proc->pid, m_proc->waittime);
-            c2++;
-            m_proc->current_queue--;
-            q2[c2] = m_proc;
-          }
-          //otherwise copy proc to lower priority queue
-          else if (m_proc->killed == 0)
-          {
-            cprintf("\033[1;31m%d switching to queue 4     since ticks of [3]= %d\n\033[0m;", m_proc->pid, m_proc->ticks[3]);
+            cprintf("\033[1;31m(%d, %s) switching to queue 4     since ticks of [3]= %d\n\033[0m", m_proc->pid, m_proc->name, m_proc->ticks[3]);
             c4++;
             m_proc->current_queue++;
             q4[c4] = m_proc;
@@ -605,6 +769,7 @@ void scheduler(void)
           continue;
         q4[i]->start=ticks;
         m_proc = q4[i];
+        display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -613,19 +778,13 @@ void scheduler(void)
         switchkvm();
         c->proc = 0;
 
-        if (ticks +m_proc->ticks[3] - m_proc->start > m_proc->waittime)
+        if(m_proc->killed!=0)
         {
-          cprintf("\033[1;32m %d switching to queue 3     since waittime %ds exceeded\n\033[0m;", m_proc->pid, m_proc->waittime);
-          c3++;
-          m_proc->current_queue--;
-          q3[c3] = m_proc;
           for (j = i; j <= c4 - 1; j++)
             q4[j] = q4[j + 1];
-          m_proc->ticks[4] = 0;
-          c4--;
         }
 
-        if (m_proc->killed == 0)
+        else if (m_proc->killed == 0)
         {
           /*move process to end of its own queue */
           for (j = i; j <= c4 - 1; j++)
