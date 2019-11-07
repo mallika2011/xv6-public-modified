@@ -33,6 +33,11 @@ int main(int argc, char *argv[])
         }
         printf(1, "\033[01;33mProcess Details :\n\033[0m");
         printf(1, "\033[01;33mpid = %d\nnum_run = %d\ncurrent queue = %d\nruntime = %d\n\033[0m", p.pid, p.num_run, p.current_queue, p.runtime);
+        for(int i=0; i<5; i++)
+        {
+            printf(1,"ticks[%d]=%d \t",i,p.ticks[i]);
+        }
+        printf(1,"\n");
         exit();
     }
 }

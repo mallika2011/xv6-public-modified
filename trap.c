@@ -65,6 +65,7 @@ void trap(struct trapframe *tf)
           #endif
 
           myproc()->ticks[proc->current_queue]++;
+          myproc()->total_ticks[proc->current_queue]++;
         }
         else if (proc->state == SLEEPING)
           proc->iotime++;

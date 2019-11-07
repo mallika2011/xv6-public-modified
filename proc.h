@@ -63,6 +63,7 @@ struct proc {
   int start;
   int waittime;
   int current_queue;
+  int total_ticks[5];
 };
 
 // Process memory is laid out contiguously, low addresses first:

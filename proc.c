@@ -628,7 +628,7 @@ void scheduler(void)
           continue;
         q0[i]->start=ticks;
         m_proc = q0[i];
-        display_queues();
+        // display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -643,7 +643,7 @@ void scheduler(void)
           //copy proc to lower priority queue
           if (m_proc->killed == 0)
           {
-            cprintf("\033[1;31m (%d,%s) switching to queue 1      since ticks of [0]= %d\n\033[0m", m_proc->pid,m_proc->name, m_proc->ticks[0]);
+            // cprintf("\033[1;31m (%d,%s) switching to queue 1      since ticks of [0]= %d\n\033[0m", m_proc->pid,m_proc->name, m_proc->ticks[0]);
             c1++;
             m_proc->current_queue++;
             q1[c1] = m_proc;
@@ -665,7 +665,7 @@ void scheduler(void)
           continue;
         q1[i]->start=ticks;
         m_proc = q1[i];
-        display_queues();
+        // display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -679,7 +679,7 @@ void scheduler(void)
           // copy proc to lower priority queue
           if (m_proc->killed == 0)
           {
-            cprintf("\033[1;31m(%d, %s) switching to queue 2      since ticks of [1]= %d\n\033[0m", m_proc->pid, m_proc->name, m_proc->ticks[1]);
+            // cprintf("\033[1;31m(%d, %s) switching to queue 2      since ticks of [1]= %d\n\033[0m", m_proc->pid, m_proc->name, m_proc->ticks[1]);
             c2++;
             m_proc->current_queue++;
             q2[c2] = m_proc;
@@ -700,7 +700,7 @@ void scheduler(void)
           continue;
         q2[i]->start=ticks;
         m_proc = q2[i];
-        display_queues();
+        // display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -714,7 +714,7 @@ void scheduler(void)
           //  copy proc to lower priority queue
           if (m_proc->killed == 0)
           {
-            cprintf("\033[1;31m(%d, %s) switching to queue 3     since ticks of [2]= %d\n\033[0m", m_proc->pid, m_proc->name, m_proc->ticks[2]);
+            // cprintf("\033[1;31m(%d, %s) switching to queue 3     since ticks of [2]= %d\n\033[0m", m_proc->pid, m_proc->name, m_proc->ticks[2]);
             c3++;
             m_proc->current_queue++;
             q3[c3] = m_proc;
@@ -735,7 +735,7 @@ void scheduler(void)
           continue;
         q3[i]->start=ticks;
         m_proc = q3[i];
-        display_queues();
+        // display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -750,7 +750,7 @@ void scheduler(void)
           // copy proc to lower priority queue
           if (m_proc->killed == 0)
           {
-            cprintf("\033[1;31m(%d, %s) switching to queue 4     since ticks of [3]= %d\n\033[0m", m_proc->pid, m_proc->name, m_proc->ticks[3]);
+            // cprintf("\033[1;31m(%d, %s) switching to queue 4     since ticks of [3]= %d\n\033[0m", m_proc->pid, m_proc->name, m_proc->ticks[3]);
             c4++;
             m_proc->current_queue++;
             q4[c4] = m_proc;
@@ -771,7 +771,7 @@ void scheduler(void)
           continue;
         q4[i]->start=ticks;
         m_proc = q4[i];
-        display_queues();
+        // display_queues();
         c->proc = m_proc;
         switchuvm(m_proc);
         m_proc->state = RUNNING;
@@ -1075,7 +1075,7 @@ int getpinfo(struct proc_stat *p_proc, int pid)
       p_proc->num_run = p.num_run;
       p_proc->current_queue = p.current_queue; 
       for (int i = 0; i < 5; i++)              
-        p_proc->ticks[i] = p.ticks[i];
+        p_proc->ticks[i] = p.total_ticks[i];
       release(&ptable.lock);
       return pid;
     }
